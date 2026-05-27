@@ -1162,7 +1162,7 @@ string getLongCodingByteName(int controlNumber) {
         case 0x11: return "Byte 10, bit 0 - IVB (Multikontursitz)";
         case 0x12: return "Byte 10, bit 1 - KL (Climate control)";
         case 0x13: return "Byte 10, bit 2 - HSP (Rear Spoiler)";
-        case 0x14: return "Byte 10, bit 3 - ToS_Q (Torque Splitter, lateral dynamics [Torque Splitter – Querdynamik])";
+        case 0x14: return "Byte 10, bit 3 - ToS_Q (Torque Splitter: lateral dynamics [Torque Splitter: Querdynamik])";
         case 0x15: return "Byte 10, bit 4 - RWB (Range calculation)";
         case 0x16: return "Byte 10, bit 5 - HDC (Downhill Assistant)";
         case 0x17: return "Byte 10, bit 6 - eBKV (Electric Brake Power Amplifier)";
@@ -1174,7 +1174,7 @@ string getLongCodingByteName(int controlNumber) {
         case 0x1D: return "Byte 09, bit 4 - Freewheeling, Default ON";
         case 0x1E: return "Byte 09, bit 5 - Modular driving dynamics controller";
         case 0x1F: return "Byte 09, bit 6 - ESH (Soundaktor/Structure-borne sound?)";
-        case 0x20: return "Byte 09, bit 7 - ToS_L (Torque Splitter, longitudinal dynamics [Torque Splitter – Längsdynamik])";
+        case 0x20: return "Byte 09, bit 7 - ToS_L (Torque Splitter: longitudinal dynamics [Torque Splitter: Längsdynamik])";
         default:   return "Unknown";
     }
 }
