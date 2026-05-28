@@ -1,6 +1,6 @@
 # Research tasks
 
-Status as of 2026-05-27. Ordered by priority.
+Status as of 2026-05-28. Ordered by priority.
 
 ---
 
@@ -28,14 +28,13 @@ Status as of 2026-05-27. Ordered by priority.
 PHEV analysis complete. Key findings documented in `research-claude.md` section
 "PHEV Dataset Parse — V03935350BG (2026-05-16)".
 
-Remaining open questions for 0x4D/0x4E/0x4F:
-- **0x4F**: links to `$0C68` function ID `0x1F` / `ESH`; appears in the Normal group on combustion datasets and takes StartStop's slot in PHEV. Semantic role still unresolved.
-- **0x4E**: links to `$0C68` function ID `0x17` / `eBKV`; takes ExhaustFlap's position in PHEV and sits with ESC/HillDescend on GTI/R.
-- **0x4D**: links to `$0C68` function ID `0x1E` / `mFDR`; appears **twice** in all datasets, likely two subchannels or grouped roles.
-- ~~A non-GTI/non-R Golf VIII variant would help isolate these IDs~~ — **CLOSED 2026-05-27**: Golf 8
-  1.4 TSI dataset (version 2033) confirmed **byte-for-byte identical** to Golf R. All three IDs are
-  present and parameter-identical across GTI/R/1.4 TSI/PHEV. Isolation via variant comparison is not
-  possible; ODIS-E parameter tree (Task 3) is the only remaining path.
+Remaining open questions for 0x4D/0x4E/0x4F (all corrected 2026-05-28):
+- **0x4F**: No LC link (not_set). Always present. No J533 function bit written on mode change.
+- **0x4E**: AGK(24) on combustion (GTI/R), SAK(14) on PHEV, ABSENT on US market GTI (2055) and 2056.
+- **0x4D**: Appears twice per dataset. LC assignments differ by version — 2033/2044: MO+ToS_L; 2056: GE+DR; 2031: GE+MO.
+- New versions 2055 (GTI-USA) and 2056 (Golf R RDM stock OEM) analyzed 2026-05-28.
+
+**Also confirmed**: 2056 stock OEM has 18 controls, Race/0x10/0x11 profiles, RDM enabled (0x0803=0x43), all returns-to-Sport after restart.
 
 ---
 

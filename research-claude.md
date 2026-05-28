@@ -1567,3 +1567,192 @@ To complete Task 8, read from OBDEleven → Module 19 (Gateway):
 - "Coding" or "Long Coding" → copy the raw hex string (48 bytes = 96 hex chars)
 - "Adaptations" → filter for "Driving profile" to see $0C68 FPA_Funktion channels
 
+
+---
+
+## Version 2055 GTI-USA Dataset Analysis (2026-05-28)
+
+**File**: `ClaudeDataset-investigation/DA_0019_7208_5H0_2055_010FPA000003_MQB37WXSTANDARD-Golf8-GTI-USA.xml`
+**Version string**: "2055" | **ZDC**: unknown | **Platform**: MQB37WXSTANDARD
+
+### Differences from 2044 EU GTI (byte-level diff)
+
+58 bytes differ (excluding CRC) — entirely consistent with removing one control (0x4E).
+
+**Control list change** (at 0x09EB):
+
+| Slot | 2044 EU GTI | 2055 US GTI |
+|------|-------------|-------------|
+| [17] | 0x4E eBKV_ext → AGK(24) | 0x1C Brakecontrol → AGK(24) |
+| [18] | 0x1C Brakecontrol → KL(18) | 0x2C HDC → KL(18) |
+| [19] | 0x2C HDC → RGS(11) | 0x17 RGS → RGS(11) |
+| [20] | 0x17 RGS → AMB(16) | (empty) |
+
+0x4E (eBKV = electro-mechanical brake servo control) is **absent** on US market GTI.
+AMB (ambient light) also drops out as a result of the shift.
+
+**Profiles**: identical — Comfort, Sport, Offroad, Eco, Individual
+
+**All other control-indexed arrays** (control_is_allowed_to_change, control_is_reset,
+restart_value, profile_settings[12][30], list_of_grouped_controls, settings_shown_in_HMI,
+request_values, gw_longcoding arrays) shift by one position consistently.
+
+**gw_longcoding shift** (inactive tail, positions [21]-[24] in lc_with):
+- 2044: [21]=0x17(eBKV), [22]=0x02(ESP), [23]=0x16, [24]=0x06(ALR)
+- 2055: [21]=0x02, [22]=0x16, [23]=0x06, [24]=0x00 — one entry shifted off
+
+**RDM button** (0x0803): 0x00 (disabled, same as all non-2056 versions)
+
+**Conclusion**: 2055 is a US-market variant of 2044. The only meaningful change is the removal
+of eBKV (hydraulic IVB/e-boost brake) which may not be fitted on US-spec Golf 8 GTI. Possibly
+the US GTI uses a different brake system variant (standard MK hydraulic without e-boost).
+
+---
+
+## Version 2056 Stock Golf R Dataset Analysis (2026-05-28)
+
+**File**: `ClaudeDataset-investigation/DA_0019_7208_5H0_2056_010FPA000003_MQB37WXRXGOLF_Golf8-R.xml`
+**Version string**: "2056" | **ZDC**: unknown | **Platform**: MQB37WXRXGOLF (RDM variant)
+
+This is the **stock OEM** 2056 dataset, compared to the VCTool-generated files in
+`research-inputs/vctool/` which are pre-configured comparison templates.
+
+### Active controls (18):
+
+| Slot | ID | Name | lc_with |
+|------|----|------|---------|
+| [0] | 0x03 | Steering | not_set |
+| [1] | 0x01 | Suspension | not_set |
+| [2] | 0x4F | ESH_ext | not_set |
+| [3] | 0x07 | ACC | not_set |
+| [4] | 0x4D | DriveDynamics inst1 | GE(5) |
+| [5] | 0x50 | MO_FDO_ext inst1 | MO(4) |
+| [6] | 0x51 | ToS_ESH_ext inst1 | ToS_L(32) |
+| [7] | 0x4D | DriveDynamics inst2 | DR(8) |
+| [8] | 0x50 | MO_FDO_ext inst2 | FDO(29) |
+| [9] | 0x51 | ToS_ESH_ext inst2 | ESH(31) |
+| [10] | 0x05 | Gearbox | mFDR(30) |
+| [11] | 0x09 | Soundcomponents2 | FDO(29) |
+| [12] | 0x0B | ESC_steer | ESH(31) |
+| [13] | 0x24 | Soundcomponents | mFDR(30) |
+| [14] | 0x23 | Exhaustflap | EPS(12) |
+| [15] | 0x1C | Brakecontrol | ACC(13) |
+| [16] | 0x0E | Klimatisierung | AFS(10) |
+| [17] | 0x0C | HeadUp | SAK(14) |
+
+### Active profiles:
+Comfort(0x01), Sport(0x03), Race(0x06), Individual(0x07), 0x11, 0x10
+
+Profiles 0x10 and 0x11 are RDM-specific "memory slots" — the Remember Drive Mode feature
+stores last-used sub-settings per drive mode here.
+
+### profile_returns_after_restart (0x0339):
+```
+[profile 0x01 Comfort]:     returns to 0x03 (Sport)
+[profile 0x03 Sport]:       returns to 0x03 (stays Sport)
+[profile 0x06 Race]:        returns to 0x03 (Sport)
+[profile 0x07 Individual]:  returns to 0x03 (Sport)
+[profile 0x08, 0x09]:       returns to 0x03 (Sport)
+```
+All profiles return to Sport after ignition restart. This differs from 2033/2044 where
+profiles return to themselves (Comfort stays Comfort, Sport stays Sport).
+
+### button_profile_lists (0x07D6) — RDM button cycling:
+```
+Button 0: [0x01, 0x08, 0x06] — cycles Comfort → 0x08 → Race
+Button 1: [0x03, 0x09]       — cycles Sport → 0x09
+Button 2: [0x06]             — Race only
+Button 3: [0x07]             — Individual only
+```
+Values 0x08 and 0x09 appear to be intermediate/transition states used by RDM logic.
+They do NOT appear in the FPA_profile active list (which has 0x10/0x11 instead).
+
+### RDM button (0x0803): 0x43 — enabled
+
+### Comparison: stock 2056 vs VCTool ALL-MODES-WITH-BUTTON-NO_ (RDM disabled)
+
+15 bytes differ (excluding CRC):
+
+| Offset | Stock 2056 | VCTool (RDM off) | Field |
+|--------|-----------|-----------------|-------|
+| 0x0339 | 0x03 | 0x01 | profile_returns_after_restart[0] |
+| 0x033E | 0x03 | 0x06 | profile_returns_after_restart[5] |
+| 0x033F | 0x03 | 0x07 | profile_returns_after_restart[6] |
+| 0x0340 | 0x03 | 0x08 | profile_returns_after_restart[7] |
+| 0x0341 | 0x03 | 0x09 | profile_returns_after_restart[8] |
+| 0x0345 | 0x00 | 0x03 | profile_returns_after_restart[12]? |
+| 0x0346 | 0xCB | 0x09 | adjacent field |
+| 0x07E2 | 0x07 | 0x09 | button_profile_lists[3][1] |
+| 0x07E6 | 0x00 | 0x08 | button_profile_lists[4][0] |
+| 0x07EA | 0x00 | 0x07 | button_profile_lists[5][0] |
+| 0x0803 | 0x43 | 0x00 | RDM button enable |
+
+VCTool configures the "ALL-MODES" variant with more profiles available per-button and
+explicit profile returns per mode. The stock OEM version defaults all returns to Sport.
+
+---
+
+## Cross-version Control List Comparison (2026-05-28)
+
+### Control IDs present across dataset versions
+
+| Control | 2031 PHEV | 2033 Golf R | 2044 GTI EU | 2055 GTI US | 2056 Golf R |
+|---------|-----------|-------------|-------------|-------------|-------------|
+| 0x01 Suspension | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 0x02 Differential | — | ✓ | ✓ | ✓ | — |
+| 0x03 Steering | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 0x05 Gearbox | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 0x07 ACC | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 0x08 DrivingLight | ✓ | ✓ | ✓ | ✓ | — |
+| 0x09 Soundcomponents2 | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 0x0B ESC_steer | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 0x0C HeadUp | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 0x0E Klimatisierung | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 0x15 Frontaxlediff | — | ✓×2 | ✓×2 | ✓×2 | — |
+| 0x17 RGS | ✓ | ✓ | ✓ | ✓ | — |
+| 0x1C Brakecontrol | — | ✓ | ✓ | ✓ | ✓ |
+| 0x23 Exhaustflap | — | ✓ | ✓ | ✓ | ✓ |
+| 0x24 Soundcomponents | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 0x2C HDC | — | ✓ | ✓ | ✓ | — |
+| 0x4D DriveDynamics | ✓×2 | ✓×2 | ✓×2 | ✓×2 | ✓×2 |
+| 0x4E eBKV_ext | ✓ | ✓ | ✓ | **absent** | **absent** |
+| 0x4F ESH_ext | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 0x50 MO_FDO_ext | — | — | — | — | ✓×2 (new) |
+| 0x51 ToS_ESH_ext | — | — | — | — | ✓×2 (new) |
+
+### gw_longcoding LC links per version (active controls only)
+
+| Version | 0x4D inst1 | 0x4D inst2 | 0x4E | 0x4F | 0x50 inst1 | 0x50 inst2 | 0x51 inst1 | 0x51 inst2 |
+|---------|-----------|-----------|------|------|-----------|-----------|-----------|-----------|
+| 2031 PHEV | GE(5) | MO(4) | SAK(14) | not_set | — | — | — | — |
+| 2033 Golf R | MO(4) | ToS_L(32) | AGK(24) | not_set | — | — | — | — |
+| 2044 GTI EU | MO(4) | ToS_L(32) | AGK(24) | not_set | — | — | — | — |
+| 2055 GTI US | MO(4) | ToS_L(32) | (absent) | not_set | — | — | — | — |
+| 2056 Golf R | GE(5) | DR(8) | (absent) | not_set | MO(4) | FDO(29) | ToS_L(32) | ESH(31) |
+
+Notes:
+- 2031 PHEV 0x4E→SAK: PHEV has electric motor soft-actuator, not combustion exhaust (AGK)
+- 2056 0x4D changed from MO+ToS_L to GE+DR — the drive-dynamics function refactored
+- 2056 new 0x50/0x51 split the original 0x4D roles across more specific controls
+
+---
+
+## Template Structure Note: grouped_controls_controlbyte (2026-05-28)
+
+The template field `long grouped_controls_controlbyte` at line 557 is declared as a single
+4-byte `long`, but empirically the block occupies 30 bytes at 0xA27-0xA44.
+
+**Empirically confirmed offsets:**
+- `list_of_controls[30]` at **0x9EB** (confirmed)
+- `grouped_controls[30]` at **0xA09** (confirmed — contains group bits 01/02/04/08)
+- Unknown 30-byte block at **0xA27-0xA44**: shadow/companion LC array, partially mirrors
+  gw_longcoding_with_links but with 3 positional differences in the active range for 2033/2044;
+  shifts in sync with lc_with for inactive tail entries when controls are removed
+- `gw_longcoding_controls_with_links[30]` at **0xA45** (confirmed empirically)
+- `gw_longcoding_controls_without_links[30]` at **0xA63** (= 0xA45+30)
+- `SettingBytes_again[30]` at **0xA81** (= 0xA45+60)
+- `SettingBytes_more[30]` at **0xA9F** (= 0xA45+90)
+
+The 30-byte block at 0xA27 needs deeper investigation — it may be an alternate LC
+assignment table used for a different operating mode, or the template comment for
+`grouped_controls_controlbyte` may be incorrect.
