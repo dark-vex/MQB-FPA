@@ -113,18 +113,25 @@ Profile names still need byte values confirmed from a real dataset before adding
 
 ---
 
-## 8. Collect one matched VCDS autoscan + dataset pair
+## ~~8. Collect one matched VCDS autoscan + dataset pair~~ — SUBSTANTIALLY DONE
 
-For the same car and moment in time:
+**Completed 2026-05-28 via OBDEleven + RDID 006 string (GTI, ZDC V03935345NU).**
 
-- Full VCDS autoscan (all modules)
-- Raw FPA dataset file
-- Gateway ASAM/ODX identifier from the autoscan
+Obtained from user's Golf VIII GTI:
+- Full $0C68 FPA_Funktion adaptation state (all 39 channels via OBDEleven screenshots)
+- RDID 006 48-byte long coding string: `00 00 80 8D 0F 00 00 00 00 00 00 00 01 03 03 32 53 01 60 09 02 00 01 00 03 01 00 00 00 01 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00`
 
-Goal: cross-reference the `gw_longcoding_controls` array values against the actual long coding bytes read by VCDS.
+Key findings (see research-claude.md "Task 8: GTI OBDEleven $0C68 + RDID 006"):
+- User GTI active functions (13): mFDR, ESH, MO, GE, VAQ, EPS, ACC, SAK, MO_StSt, AMB, KL, eBKV, AGK
+- AFS = Not active (user has static LED headlights; ODIS-E reference GTI had adaptive headlights)
+- RDID 006 bytes 12-23 match ODIS-E reference GTI exactly at the FPA-relevant positions
+- 4 RDID 006 bits differ R vs GTI: byte 15 bit 0, byte 16 bit 5, byte 20 bit 1, byte 22 bit 1
+  - byte 20 bit 1 = VAQ (confirmed), byte 22 bit 1 = ToS_L + ToS_Q (both gated together)
+  - bytes 15/16 = ESP and ALR (order ambiguous without a one-but-not-other vehicle)
 
-**Note (2026-05-26):** User has a running Golf GTI with all ECUs available as a candidate for a
-matched VCDS autoscan + dataset pair. This would be the first fully correlated pair.
+**Remaining gap**: VCDS full autoscan not obtained (OBDEleven used instead). The
+`gw_longcoding_controls` cross-reference is complete for the FPA-relevant RDID 006 bits.
+The "Byte N, bit M" labels in getLongCodingByteName() do NOT map to RDID 006 byte positions.
 
 ---
 

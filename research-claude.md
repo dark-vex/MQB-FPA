@@ -1756,3 +1756,133 @@ The template field `long grouped_controls_controlbyte` at line 557 is declared a
 The 30-byte block at 0xA27 needs deeper investigation — it may be an alternate LC
 assignment table used for a different operating mode, or the template comment for
 `grouped_controls_controlbyte` may be incorrect.
+
+---
+
+## Task 8: GTI OBDEleven $0C68 + RDID 006 — Complete Analysis (2026-05-28)
+
+### RDID 006 Long Coding (48 bytes from user's GTI via OBDEleven)
+
+```
+00 00 80 8D 0F 00 00 00 00 00 00 00 01 03 03 32 53 01 60 09 02 00 01 00 03 01 00 00 00 01 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+```
+
+**Verification**: Bytes 12–23 match ODIS-E GTI reference car exactly:
+`01 03 03 32 53 01 60 09 02 00 01 00` ✓
+
+**Non-zero bytes:**
+| Byte | Value | Binary |
+|------|-------|--------|
+| 2 | 0x80 | 1000 0000 |
+| 3 | 0x8D | 1000 1101 |
+| 4 | 0x0F | 0000 1111 |
+| 12 | 0x01 | 0000 0001 |
+| 13 | 0x03 | 0000 0011 |
+| 14 | 0x03 | 0000 0011 |
+| 15 | 0x32 | 0011 0010 |
+| 16 | 0x53 | 0101 0011 |
+| 17 | 0x01 | 0000 0001 |
+| 18 | 0x60 | 0110 0000 |
+| 19 | 0x09 | 0000 1001 |
+| 20 | 0x02 | 0000 0010 |
+| 22 | 0x01 | 0000 0001 |
+| 24 | 0x03 | 0000 0011 |
+| 25 | 0x01 | 0000 0001 |
+| 29 | 0x01 | 0000 0001 |
+| 30 | 0x01 | 0000 0001 |
+
+Bytes 2–4 are decoded by ODIS-E as EMHLR parameters (battery architecture/location, start-stop,
+recuperation etc.) — hardware config not relevant to FPA.
+Bytes 12–30 contain the J533 function enablement block.
+
+### Golf R vs GTI RDID 006 — FPA-relevant bit mapping
+
+| RDID 006 position | Golf R | GTI | Function gated |
+|-------------------|--------|-----|----------------|
+| Byte 15, bit 0 | 1 | **0** | ESP or ALR (R-only) |
+| Byte 16, bit 5 | 1 | **0** | ALR or ESP (R-only) |
+| Byte 20, bit 1 | 0 | **1** | **VAQ** (GTI-only, confirmed) |
+| Byte 22, bit 1 | 1 | **0** | ToS — gates **both** ToS_L AND ToS_Q (R-only) |
+
+**Why 4 bits for 5 FPA functions** (ToS_L, ESP, ALR, ToS_Q, VAQ):
+Byte 22 bit 1 is the single "Torque Splitter installed" hardware flag that enables BOTH
+`FPA_Funktion_ToS_L` and `FPA_Funktion_ToS_Q`. Both share the same physical hardware
+(rear torque splitter modules 8126/8127) so J533 gates them with one bit.
+
+**Byte 15 bit 0 = ESP vs ALR ambiguity**: Cannot distinguish without a vehicle that has
+one but not the other. From gw_longcoding template labels: ESP="LC Byte 12, bit 1" and
+ALR="LC Byte 12, bit 5". The template's "Byte N" labels do NOT match RDID 006 byte positions
+(empirically confirmed: VAQ="LC Byte 11, bit 0" but is actually RDID 006 byte 20, bit 1).
+
+### Complete $0C68 FPA_Funktion state (user's GTI + ODIS-E references)
+
+| Ch | Channel | Golf R (ODIS-E) | GTI ref (ODIS-E) | User GTI (OBDEleven) |
+|----|---------|----------------|-----------------|---------------------|
+| 0 | FPA_Funktion | Active | Active | Active |
+| 1 | FPA_Personalisierung | Active | Active | Active |
+| 2 | FPA_Kombi_Status | ? | ? | Not active |
+| 3 | FPA_BAP_Display | ? | ? | Active |
+| 4 | FPA_Kombi_Anzeige | ? | ? | Active |
+| 5 | FPA_Taster_Auswertung | ? | ? | Rising slope |
+| 6 | FPA_BAP_Start_aktiv | ? | ? | Active |
+| 7 | FPA_Funktion_EDS | Not active | Not active | Not active |
+| 8 | FPA_Funktion_HHC | Not active | Not active | Not active |
+| 9 | FPA_Funktion_PDC | Not active | Not active | Not active |
+| 10 | FPA_Funktion_FMA | Not active | Not active | Not active |
+| 11 | FPA_Funktion_Freilauf_DefaultON | Not active | Not active | Not active |
+| 12 | FPA_Funktion_mFDR | **Active** | **Active** | **Active** |
+| 13 | FPA_Funktion_ESH | **Active** | **Active** | **Active** |
+| 14 | FPA_Funktion_ToS_L | **Active** | Not active | Not active |
+| 15 | FPA_Funktion_AGA | Not active | Not active | Not active |
+| 16 | FPA_Funktion_ESP | **Active** | Not active | Not active |
+| 17 | FPA_Funktion_Freilauf | Not active | Not active | Not active |
+| 18 | FPA_Funktion_MO | **Active** | **Active** | **Active** |
+| 19 | FPA_Funktion_GE | **Active** | **Active** | **Active** |
+| 20 | FPA_Funktion_ALR | **Active** | Not active | Not active |
+| 21 | FPA_Funktion_MO_BZS | Not active | Not active | Not active |
+| 22 | FPA_Funktion_DR | Not active | Not active | Not active |
+| 23 | FPA_Funktion_VAQ | Not active | **Active** | **Active** |
+| 24 | FPA_Funktion_AFS | **Active** | **Active** | Not active† |
+| 25 | FPA_Funktion_RGS | Not active | Not active | Not active |
+| 26 | FPA_Funktion_EPS | **Active** | **Active** | **Active** |
+| 27 | FPA_Funktion_ACC | **Active** | **Active** | **Active** |
+| 28 | FPA_Funktion_SAK | **Active** | **Active** | **Active** |
+| 29 | FPA_Funktion_MO_StSt | **Active** | **Active** | **Active** |
+| 30 | FPA_Funktion_AMB | **Active** | **Active** | **Active** |
+| 31 | FPA_Funktion_IVB | Not active | Not active | Not active |
+| 32 | FPA_Funktion_KL | **Active** | **Active** | **Active** |
+| 33 | FPA_Funktion_HSP | Not active | Not active | Not active |
+| 34 | FPA_Funktion_ToS_Q | **Active** | Not active | Not active |
+| 35 | FPA_Funktion_RWB | Not active | Not active | Not active |
+| 36 | FPA_Funktion_HDC | Not active | Not active | Not active |
+| 37 | FPA_Funktion_eBKV | **Active** | **Active** | **Active** |
+| 38 | FPA_Funktion_AGK | **Active** | **Active** | **Active** |
+
+†AFS discrepancy: ODIS-E reference GTI had AFS active; user's GTI does not. The RDID 006
+coding is identical between both cars, confirming these are TWO DIFFERENT GTIs. The
+ODIS-E reference car has adaptive (swiveling) LED headlights; the user's car has
+static LED headlights (no AFS ECU active). ZDC version 2044 has AFS gated by $0C68 only,
+not by RDID 006 — so AFS can be enabled/disabled via ZDC without hardware gating.
+
+### Summary: user's GTI active FPA functions (13)
+
+mFDR, ESH, MO, GE, **VAQ**, EPS, ACC, SAK, MO_StSt, AMB, KL, eBKV, AGK
+
+Missing vs Golf R: ToS_L, ESP, ALR, ToS_Q — all gated by RDID 006 bits requiring Golf R hardware.
+Missing vs ODIS-E ref GTI: AFS — ZDC-only gate, no RDID 006 requirement (hardware difference only).
+
+### Implications for cross-model feature activation
+
+Features that would require ONLY $0C68 ZDC changes (no RDID 006 hardware gate):
+- **AFS**: Can be activated via ZDC. RDID 006 does not gate it. Requires adaptive headlight ECU.
+  On user's car: no AFS ECU → enabling in ZDC would activate the FPA channel but the
+  headlight ECU won't respond to mode changes (harmless but pointless without hardware).
+
+Features that require RDID 006 bit changes AND physical hardware:
+- **ToS_L/ToS_Q**: Needs RDID 006 byte 22 bit 1 SET + torque splitter hardware (8126/8127)
+- **ESP mode switching**: Needs RDID 006 byte 15 or 16 bit change + ESC hardware variant
+- **ALR**: Same — RDID 006 gated + Golf R AWD hardware
+
+Features GTI can gain from Golf R ZDC that ARE hardware-present on GTI:
+- None of the R-only functions are present on GTI hardware.
+- The GTI ZDC already activates all GTI-appropriate functions (VAQ, eBKV, etc.)
