@@ -1130,8 +1130,22 @@ string getControlName(int i) {
         case 55: j = "Drivemode2"; break;              // 
         case 56: j = "Drivemode3"; break;              // 
         case 57: j = "Double clutch"; break;           //
+        // IDs 0x4D–0x51: MQB2020 (EV_GatewMQB2020) platform extensions, confirmed 2026-05-28
+        // gw_longcoding with_link = J533 long-coding bit the FPA WRITES when switching drive mode
+        // 0x4D: appears TWICE per dataset; with_link differs per version and instance:
+        //   2033/2044 instance 1: writes MO (0x04)   instance 2: writes ToS_L (0x20)
+        //   2056      instance 1: writes GE (0x05)   instance 2: writes DR (0x08)
+        // 0x4E: absent in 2056; with_link = AGK (0x18)
+        // 0x4F: present in all versions; with_link = not_set (0x00, no LC gate)
+        // 0x50: NEW in 2056; instance 1 writes MO (0x04), instance 2 writes Freilauf_DefaultON (0x1D)
+        // 0x51: NEW in 2056; instance 1 writes ToS_L (0x20), instance 2 writes ESH (0x1F); zeroed in ESC ring variants
+        case 0x4D: j = "-- 0x4D [DriveDynamics]"; break;
+        case 0x4E: j = "-- 0x4E [eBKV_ext]"; break;             // LC writes AGK bit; absent in 2056
+        case 0x4F: j = "-- 0x4F [ESH_ext]"; break;              // no LC gate; soundaktor
+        case 0x50: j = "-- 0x50 [MO+Freilauf_DefaultON]"; break; // 2056 only; appears twice
+        case 0x51: j = "-- 0x51 [ToS_L+ESH]"; break;            // 2056 only; zeroed in ESC ring variants
         case 0xFF: j = "--"; break;                    // CharismaListFunctions.NONE
-        
+
         default:   j = "-- Unknown"; break;
     }
     
