@@ -1470,3 +1470,32 @@ RDID, confirmed to be WRONG as J533 RDID 006 byte positions.
 with a named J533 function. The exact byte/bit position within J533 firmware remains
 unresolved without the ODX schema or a matched VCDS scan (Task 8).
 
+
+---
+
+## Cross-Dataset gw_longcoding Summary (all 4 versions, 2026-05-28)
+
+Full comparison of gw_longcoding_controls_with_links across all known dataset versions.
+
+| Dataset | Version | Ctl 0x4D inst.1 | Ctl 0x4D inst.2 | Ctl 0x4E | Ctl 0x4F | Ctl 0x50 | Ctl 0x51 |
+|---------|---------|----------------|----------------|----------|----------|----------|----------|
+| 2031 PHEV | V03935350BG | GE (0x05) at pos[4] | MO (0x04) at pos[5] | SAK (0x0E) at pos[13] | not_set | absent | absent |
+| 2033 Golf R | V03935364D | MO (0x04) at pos[5] | ToS_L (0x20) at pos[7] | AGK (0x18) at pos[17] | not_set | absent | absent |
+| 2044 GTI | V03935345NU | MO (0x04) at pos[5] | ToS_L (0x20) at pos[7] | AGK (0x18) at pos[17] | not_set | absent | absent |
+| 2056 RDM | MQB37WXRXGOLF | GE (0x05) at pos[4] | DR (0x08) at pos[7] | absent | not_set | MO+Freilauf_DefaultON | ToS_L+ESH |
+
+Key observations:
+- 0x4D's LC links CHANGE across versions/variants: each instance maps to the hardware subsystems relevant for that vehicle
+  - PHEV: coordinates GE (transmission) + MO (engine) — hybrid drive management
+  - Golf R/GTI 2033/2044: coordinates MO (engine) + ToS_L (torque splitter) — AWD performance
+  - Golf R 2056 "RX": coordinates GE (transmission) + DR (damper/DCC) — newer architecture
+- 0x4E's LC link also changes: SAK on PHEV vs AGK on combustion cars
+  - PHEV: 0x4E writes SAK (interior sound actuator) — no exhaust flap on PHEV
+  - Golf R/GTI: 0x4E writes AGK (exhaust valve) — active exhaust present
+- 0x4F always has not_set (no LC gate) across all versions
+- 0x50/0x51 only in 2056, taking over the MO+ToS_L functions from 0x4D
+
+This confirms 0x4D is a GENERIC "drive dynamics coordinator" whose LC assignments
+are dataset-specific based on what hardware is installed. Its ODX name likely
+describes the coordination role rather than any specific subsystem.
+
