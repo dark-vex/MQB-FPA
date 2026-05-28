@@ -1499,3 +1499,71 @@ This confirms 0x4D is a GENERIC "drive dynamics coordinator" whose LC assignment
 are dataset-specific based on what hardware is installed. Its ODX name likely
 describes the coordination role rather than any specific subsystem.
 
+
+---
+
+## GTI OBDEleven Module Inventory (2026-05-28)
+
+Source: `ClaudeDataset-investigation/OBDeleven_Log.txt`
+Car: Golf 8 GTI "Daniel-San", VIN redacted, 2021, ~40493 km, scan date 2026-05-28
+
+### GTI J533 gateway identification
+- Module 19: GW2020 High, SW 5WA907530**N** v7312, HW 5WA907530C v752
+- Note: Golf R has 5WA907530**Q** (different SW variant)
+
+### Full module list (24 ECUs)
+
+| Addr | Description | System | SW Part | Notes |
+|------|-------------|--------|---------|-------|
+| 01 | Engine | R4 2.0l TFSI | 8Y0906264 | 2.0 TSI, DNPA engine code |
+| 02 | Transmission | GSG DQ381 | 0GC906557B | 7-speed DSG, dual-clutch |
+| 03 | Brakes | ESC | 5WA614517BL | ABS/ESC module |
+| 08 | Air Conditioning | Climatronic | 5WA907727BB | |
+| 09 | Central Electrics | BCM 37W BOSCH | 5WA937086E | |
+| 13 | Adaptive Cruise Control | ACC Bosch MQB | 5WA907572A | FPA: ACC active |
+| 15 | Airbag | AirbagVW40 | 5WA959655H | |
+| 17 | Dashboard | KOMBI | 5H0920340A | |
+| 19 | Gateway | GW2020 High | 5WA907530N | FPA ECU, ZDC V03935345NU |
+| 2B | Steering Column Lock | ELV-MQBB | 2Q0905861B | |
+| 32 | Lock Electronics | **Quersperre** | 5WA907554B | **VAQ** — front LSD! |
+| 42 | Driver Door | TSG FS | 5Q0959593K | |
+| 44 | Steering Assistance | BASGEN1MQB37 | 5WA907145G | EPS |
+| 52 | Passenger Door | TSG BFS | 5Q0959592K | |
+| 5F | Multimedia | MU-O-ND-EU | 5H0035816K | |
+| 6C | Rear View Camera | RV eCompact | 5WA980556B | |
+| 75 | Telematics | OCU3HMQB37W | 5WA035284J | |
+| 76 | Parking Assistant | PDC 08 Kanal | 5WA919294C | |
+| 8107 | Antenna module | TrxModulHigh | 5WA035741B | |
+| A5 | Driver Assistance | MQB MFK 3.0 | 5WA980653A | ADAS camera |
+| A9 | Structure Borne Sound | **SAS-GEN 2.5** | 5H0907159 | **ESH** — soundaktor |
+| B7 | Start System Interface | Kessy IOBOX | 5WA959436B | |
+| D6/D7 | LED Modules L/R | LED1L/LED1R | 992941571AE | adaptive headlights (AFS) |
+
+### FPA-relevant module cross-reference
+
+| FPA_Funktion | Active? | Module | Confirms |
+|-------------|---------|--------|---------|
+| FPA_Funktion_VAQ | **yes (GTI)** | 32 "Quersperre" | VAQ ECU present |
+| FPA_Funktion_ESH | yes | A9 "Structure Borne Sound" | ESH/soundaktor present |
+| FPA_Funktion_ACC | yes | 13 "Adaptive Cruise Control" | ACC ECU present |
+| FPA_Funktion_AFS | yes | D6/D7 LED modules | Adaptive headlights present |
+| FPA_Funktion_EPS | yes | 44 "Steering Assistance" | EPS present |
+| FPA_Funktion_ToS_L | **no (GTI)** | (absent) | No torque splitter — Golf R has 8126/8127 |
+| FPA_Funktion_ToS_Q | **no (GTI)** | (absent) | Same — GTI no rear AWD |
+| FPA_Funktion_ALR | **no (GTI)** | (absent) | No rear LSD |
+
+Module 32 "Quersperre" (literally: transverse/cross lock = front differential lock) is the
+VAQ ECU, unique to GTI. This module is absent on the Golf R, which instead has modules
+8126 and 8127 (rear torque splitter, left/right axle) for FPA_Funktion_ToS_L/ToS_Q.
+
+### What this file does NOT contain (needed for Task 8)
+
+The OBDEleven fault scan does not include:
+1. J533 48-byte long coding (RDID 006) — needed to map gw_longcoding bit positions
+2. $0C68 FPA_Funktion adaptation channel values
+3. Any per-module long coding/adaptation
+
+To complete Task 8, read from OBDEleven → Module 19 (Gateway):
+- "Coding" or "Long Coding" → copy the raw hex string (48 bytes = 96 hex chars)
+- "Adaptations" → filter for "Driving profile" to see $0C68 FPA_Funktion channels
+
