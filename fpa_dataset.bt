@@ -1263,8 +1263,8 @@ string getFPAName(int settingNumber) {
         case 0x07: return "Individual";
         case 0x08: return "Range/PHEV 1/Clubsport/Snow";
         case 0x09: return "Lift/PHEV 2";
-        case 0x0A: return "Snow";
-        case 0x0B: return "Offroad Individual/PHEV 4/Hybrid Auto";
+        case 0x0A: return "Drift/Snow";
+        case 0x0B: return "Nürburgring/Offroad Individual/PHEV 4/Hybrid Auto";
         case 0x0C: return "Offroad 4/Hybrid Hold";
         case 0x0D: return "Offroad 5/Hybrid Charge";
         case 0x0E: return "Offroad 6/Hybrid Area";
