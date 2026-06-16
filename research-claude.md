@@ -1886,3 +1886,83 @@ Features that require RDID 006 bit changes AND physical hardware:
 Features GTI can gain from Golf R ZDC that ARE hardware-present on GTI:
 - None of the R-only functions are present on GTI hardware.
 - The GTI ZDC already activates all GTI-appropriate functions (VAQ, eBKV, etc.)
+
+---
+
+## unknown_A27 Block Analysis — 0xA27–0xA44 (2026-05-28)
+
+Cross-dataset analysis of the 30-byte block at 0xA27 (immediately before `gw_longcoding_controls_with_links`).
+Datasets analysed: 2031 PHEV, 2033 Golf R, 2044 GTI EU, 2055 GTI US, 2056 Golf R + 6 vctool variants.
+
+### Key finding 1 — Block is structural, not configurable
+
+All 6 vctool/ESC 2056 variants (RDM on/off, ESC ring ON/SPORT/+Exhaust) have **identical** `unknown_A27`.
+The block does not change when any user-configurable field changes. It is baked in by the dataset
+generator, not parameterised.
+
+### Key finding 2 — Three value classes
+
+For every position i in 0..29:
+
+**Class A — matches `lc_with` exactly**: The large majority of active positions. No mystery.
+
+**Class B — FDO→mFDR swap** (`lc_with[i]=0x1D`, `unknown_A27[i]=0x1E`):
+| Version | Position | ctrl_ID | grp |
+|---------|----------|---------|-----|
+| 2031    | 8, 9     | 0x0B, 0x24 | 0 |
+| 2033/2044/2055 | 9, 11 | 0x05, 0x0B | 0 |
+| 2056    | 8, 11    | 0x50(inst2), 0x09 | 16, 0 |
+
+Always at ungrouped (grp=0) controls or 0x50 inst2. Affected controls are:
+0x05 (Steerablebeam/motorway light), 0x0B (Steerablebeam), 0x09 (ACC), 0x24 (Soundcomponents/mFDR), 0x50 inst2.
+In the LC namespace, FDO(0x1D) and mFDR(0x1E) are adjacent (Byte 09 bits 4–5).
+
+**Class C — ToS_L→ESH swap** (`lc_with[i]=0x20`, `unknown_A27[i]=0x1F`):
+| Version | Position | ctrl_ID | grp |
+|---------|----------|---------|-----|
+| 2031    | 6        | 0x05    | 0   |
+| 2033/2044/2055 | 7 | 0x4D inst2 | 4 |
+| 2056    | 6        | 0x51 inst1 | 2  |
+
+Always at the "last instance" of the dual-write control within its group.
+In the LC namespace, ESH(0x1F) and ToS_L(0x20) are adjacent (Byte 09 bits 6–7).
+
+**Class D — 2056-only additional swaps** (extending the pattern to new controls):
+- pos[9]  ctrl=0x51 inst2: `unk=ToS_Q(0x14)` vs `lc_with=ESH(0x1F)` — and `unk[inst1]=lc_with[inst2]=ESH` (cross-instance match)
+- pos[10] ctrl=0x05: `unk=ToS_L(0x20)` vs `lc_with=mFDR(0x1E)` — +2 shift
+- pos[12] ctrl=0x0B: `unk=ToS_Q(0x14)` vs `lc_with=ESH(0x1F)`
+- pos[13] ctrl=0x24: `unk=ToS_L(0x20)` vs `lc_with=mFDR(0x1E)` — +2 shift
+
+These 2056 swaps follow the same "adjacent LC bit" logic with the new 0x50/0x51 control IDs in the picture.
+
+**Class E — Anchor sentinels** at positions where `lc_with=0x00` (no LC gate):
+| Version | Position | ctrl_ID | unk value |
+|---------|----------|---------|-----------|
+| 2031    | 3        | 0x07 (Damper) | 0x3F |
+| 2033/2044/2055 | 2 | 0x02 (Start/Stop) | 0x31 |
+| 2033/2044/2055 | 3 | 0x4F (ESH_NEW) | 0xFF |
+| 2056    | 2        | 0x4F (ESH_NEW) | 0x63 |
+| 2056    | 3        | 0x07 (Damper) | 0xFF |
+
+Always 1–2 per dataset. The 0xFF value is always the last (or only) sentinel and
+likely acts as a terminator for the group boundary processor. The non-FF values
+(0x31, 0x3F, 0x63) are above the valid LC range (max 0x20) and do not correspond to
+any known LC function — encoding not yet decoded, but clearly group-structure metadata.
+
+### Working hypothesis
+
+`unknown_A27` is a **third J533 LC write table** — likely the values written when
+**exiting** a profile (mode-off / fallback), while `gw_longcoding_controls_with_links`
+is the value written when **entering** a profile. The systematic ±1 adjacency in the LC
+namespace at specific positions (FDO/mFDR, ESH/ToS_L) may represent an "active" vs
+"standby" state pair for the same hardware function.
+
+Alternative: it could be the LC values written to a **secondary subsystem** (e.g. the
+instrument cluster J285 or a second gateway path), using a slightly different bit mapping.
+
+### What this does NOT tell us
+
+- The meaning of 0x31, 0x3F, 0x63 (non-FF sentinels) — requires more datasets or ODX source.
+- Whether the exit-vs-entry hypothesis is correct — would need a live ODIS-E trace comparing
+  LC register values before and after a mode change.
+
