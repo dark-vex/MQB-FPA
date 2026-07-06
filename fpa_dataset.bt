@@ -1125,7 +1125,7 @@ string getControlName(int i) {
         case 51: j = "Esound"; break;                  // Esound, used on electric vehicles
         case 52: j = "Eabc"; break;                    // electromechanical Active Body Control
         case 53: j = "Drivemode"; break;               // Could be the electronic drive modes as seen on GTE
-        case 54: j = "Ebkv"; break;                    // Electric Brake Power Amplifier?
+        case 54: j = "Ebkv"; break;                    // Electromechanical Brake Servo (elektromechanischer Bremskraftverstärker)
         case 55: j = "Drivemode2"; break;              // 
         case 56: j = "Drivemode3"; break;              // 
         case 57: j = "Double clutch"; break;           //
@@ -1171,7 +1171,7 @@ string getLongCodingByteName(int controlNumber) {
         case 0x14: return "Byte 10, bit 3 - ToS_Q (Torque Splitter: lateral dynamics [Torque Splitter: Querdynamik])";
         case 0x15: return "Byte 10, bit 4 - RWB (Range calculation)";
         case 0x16: return "Byte 10, bit 5 - HDC (Downhill Assistant)";
-        case 0x17: return "Byte 10, bit 6 - eBKV (Electric Brake Power Amplifier)";
+        case 0x17: return "Byte 10, bit 6 - eBKV (Electromechanical Brake Servo)";
         case 0x18: return "Byte 10, bit 7 - AGK (Exhaust valves)";
         case 0x19: return "Byte 09, bit 0 - EDS (Rear differential lock)";
         case 0x1A: return "Byte 09, bit 1 - HHC (Hill Hold Control)";
@@ -1214,7 +1214,7 @@ string getGroupMemberLongCodingByteName(int value) {
     if (value & (1 << 19))  { controlName += "ToS_Q (Torque Splitter, lateral dynamics [Torque Splitter – Querdynamik]), ";}
     if (value & (1 << 20))  { controlName += "RWB (Range calculation), ";}
     if (value & (1 << 21))  { controlName += "HDC (Downhill Assistant), ";}
-    if (value & (1 << 22))  { controlName += "eBKV (Electric Brake Power Amplifier), ";}
+    if (value & (1 << 22))  { controlName += "eBKV (Electromechanical Brake Servo), ";}
     if (value & (1 << 23))  { controlName += "AGK (Exhaust valves), ";}
     if (value & (1 << 24))  { controlName += "EDS (Rear differential lock), ";}
     if (value & (1 << 25))  { controlName += "HHC (Hill Hold Control), ";}
